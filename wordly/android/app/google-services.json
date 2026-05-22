@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "256032474244",
+    "project_id": "wordly-1157a",
+    "storage_bucket": "wordly-1157a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:256032474244:android:0c38040a31e9fdd3966ed1",
+        "android_client_info": {
+          "package_name": "com.wordly.wordly"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "256032474244-m8dn3m310aramo6gpfgk81fk634ecjeq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNc2GyLfWW6UQXmvQQ82jMSLVYk7tjdiE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "256032474244-m8dn3m310aramo6gpfgk81fk634ecjeq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

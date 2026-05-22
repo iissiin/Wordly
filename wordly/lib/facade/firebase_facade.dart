@@ -1,10 +1,9 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wordly/core/constants/app_secrets.dart';
 
 import '../core/constants/app_constants.dart';
 import '../domain/entities/pack_entity.dart';
@@ -18,7 +17,6 @@ class FirebaseFacade {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final FirebaseMessaging _messaging;
-  final FirebaseStorage _storage;
   final GoogleSignIn _googleSignIn;
   final Uuid _uuid;
 
@@ -27,18 +25,17 @@ class FirebaseFacade {
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     FirebaseMessaging? messaging,
-    FirebaseStorage? storage,
     GoogleSignIn? googleSignIn,
   })  : _auth = auth ?? FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance,
         _messaging = messaging ?? FirebaseMessaging.instance,
-        _storage = storage ?? FirebaseStorage.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(),
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              clientId: AppSecrets.webClientId,
+            ),
         _uuid = const Uuid();
 
-  // ════════════════════════════════════════════════════════
-  //  БЛОК 1: АВТОРИЗАЦИЯ
-  // ════════════════════════════════════════════════════════
+  //  MARK: БЛОК 1: АВТОРИЗАЦИЯ
 
   /// Текущий пользователь (null если не авторизован)
   UserEntity? get currentUser {
@@ -101,9 +98,7 @@ class FirebaseFacade {
     ]);
   }
 
-  // ════════════════════════════════════════════════════════
-  //  БЛОК 2: ПАКИ СЛОВ
-  // ════════════════════════════════════════════════════════
+  // MARK: БЛОК 2: ПАКИ СЛОВ
 
   /// Получить паки пользователя (real-time поток)
   Stream<List<PackEntity>> watchPacks(String userId) {
@@ -192,9 +187,7 @@ class FirebaseFacade {
     await batch.commit();
   }
 
-  // ════════════════════════════════════════════════════════
-  //  БЛОК 3: СЛОВА
-  // ════════════════════════════════════════════════════════
+  //  MARK: БЛОК 3: СЛОВА
 
   /// Слова пака (real-time поток)
   Stream<List<WordEntity>> watchWords(String packId) {
@@ -292,9 +285,7 @@ class FirebaseFacade {
     });
   }
 
-  // ════════════════════════════════════════════════════════
-  //  БЛОК 4: ПОВТОРЕНИЕ (алгоритм интервального повторения)
-  // ════════════════════════════════════════════════════════
+  //  MARK: БЛОК 4: ПОВТОРЕНИЕ (алгоритм интервального повторения)
 
   /// Сохранить результат повторения
   /// Здесь применяется алгоритм интервального повторения
@@ -378,9 +369,7 @@ class FirebaseFacade {
     );
   }
 
-  // ════════════════════════════════════════════════════════
-  //  БЛОК 5: УВЕДОМЛЕНИЯ
-  // ════════════════════════════════════════════════════════
+  //  MARK: БЛОК 5: УВЕДОМЛЕНИЯ
 
   /// Инициализировать push-уведомления
   Future<void> _initializeMessaging(String userId) async {
@@ -401,31 +390,7 @@ class FirebaseFacade {
     }
   }
 
-  // ════════════════════════════════════════════════════════
-  //  БЛОК 6: ХРАНИЛИЩЕ (аватары)
-  // ════════════════════════════════════════════════════════
-
-  /// Загрузить фото профиля
-  Future<String> uploadProfilePhoto({
-    required String userId,
-    required File imageFile,
-  }) async {
-    final ref = _storage.ref().child('avatars/$userId/profile.jpg');
-    final uploadTask = await ref.putFile(imageFile);
-    final downloadUrl = await uploadTask.ref.getDownloadURL();
-
-    // Обновляем URL в Firestore
-    await _firestore
-        .collection(AppConstants.usersCollection)
-        .doc(userId)
-        .update({'photoUrl': downloadUrl});
-
-    return downloadUrl;
-  }
-
-  // ════════════════════════════════════════════════════════
-  //  ПРИВАТНЫЕ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
-  // ════════════════════════════════════════════════════════
+  //  MARK: БЛОК 6: ХРАНИЛИЩЕ (аватары)
 
   /// Сохранить пользователя в Firestore (при первом входе или обновлении)
   Future<void> _saveUserToFirestore(User user) async {
