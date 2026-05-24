@@ -1,18 +1,10 @@
-import '../entities/user_entity.dart';
+import 'package:wordly/domain/entities/user.dart';
 
 abstract class AuthRepository {
-  // Текущий пользователь (null если не авторизован)
-  UserEntity? get currentUser;
-
-  // Поток изменений авторизации (вошёл/вышел)
-  Stream<UserEntity?> get authStateChanges;
-
-  // Войти через Google
-  Future<UserEntity> signInWithGoogle();
-
-  // Выйти
+  Stream<AppUser?> get authStateChanges;
+  AppUser? get currentUser;
+  Future<AppUser> signInWithGoogle();
   Future<void> signOut();
-
-  // Удалить аккаунт
+  Future<void> updateUserName(String name);
   Future<void> deleteAccount();
 }
