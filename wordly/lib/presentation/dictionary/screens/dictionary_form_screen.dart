@@ -14,7 +14,7 @@ import '../cubit/dictionary_state.dart';
 import '../models/word_entry.dart';
 
 class DictionaryFormScreen extends StatefulWidget {
-  final Dictionary? dictionary; // null = создание
+  final Dictionary? dictionary;
 
   const DictionaryFormScreen({super.key, this.dictionary});
 
@@ -23,7 +23,6 @@ class DictionaryFormScreen extends StatefulWidget {
 }
 
 class _DictionaryFormScreenState extends State<DictionaryFormScreen> {
-  // Лимиты
   static const int _maxWords = 200;
   static const int _minWords = 2;
   static const int _maxWordLength = 100;
@@ -34,7 +33,6 @@ class _DictionaryFormScreenState extends State<DictionaryFormScreen> {
   late final TextEditingController _descController;
   late final List<WordEntry> _entries;
 
-  // id слов которые нужно удалить (только при редактировании)
   final List<String> _wordIdsToDelete = [];
 
   bool get _isEditing => widget.dictionary != null;
@@ -316,7 +314,6 @@ class _DictionaryFormScreenState extends State<DictionaryFormScreen> {
 }
 
 // ─── Word Entry Row ────────────────────────────────────────────
-
 class _WordEntryRow extends StatelessWidget {
   final WordEntry entry;
   final int index;
@@ -342,7 +339,7 @@ class _WordEntryRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Index number ──────────────────────────
+          // ── Index ─────────────────────────────
           Padding(
             padding: const EdgeInsets.only(top: 10, right: 8),
             child: SizedBox(
@@ -355,109 +352,90 @@ class _WordEntryRow extends StatelessWidget {
             ),
           ),
 
-          // ── Original ──────────────────────────────
+          // ── Original ──────────────────────────
           Expanded(
             child: TextField(
               controller: entry.originalController,
               maxLength: maxLength,
-              maxLines: 1,
-              textInputAction: TextInputAction.next,
               style: AppTextStyles.body,
               onChanged: (_) => onChanged(),
-              decoration: InputDecoration(
-                hintText: AppStrings.original,
-                hintStyle: AppTextStyles.body.copyWith(
-                  color: AppColors.textHint,
-                ),
-                counterText: '',
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
-                ),
-                filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 1.5,
-                  ),
-                ),
-              ),
+              decoration: _inputDecoration(AppStrings.original),
             ),
           ),
 
           const SizedBox(width: 8),
 
-          // ── Translation ───────────────────────────
+          // ── Translation ───────────────────────
           Expanded(
             child: TextField(
               controller: entry.translationController,
               maxLength: maxLength,
-              maxLines: 1,
-              textInputAction: TextInputAction.next,
               style: AppTextStyles.body,
               onChanged: (_) => onChanged(),
-              decoration: InputDecoration(
-                hintText: AppStrings.translation,
-                hintStyle: AppTextStyles.body.copyWith(
-                  color: AppColors.textHint,
-                ),
-                counterText: '',
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
-                ),
-                filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 1.5,
+              decoration: _inputDecoration(AppStrings.translation),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // ── DELETE (ANIMATED) ─────────────────
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            width: canDelete ? 36 : 0,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: canDelete ? 1 : 0,
+              child: IgnorePointer(
+                ignoring: !canDelete,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: AppColors.textHint,
+                  ),
+                  onPressed: onDelete,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
                   ),
                 ),
               ),
             ),
           ),
-
-          // ── Delete button ─────────────────────────
-          if (canDelete)
-            Padding(
-              padding: const EdgeInsets.only(left: 4, top: 4),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.close,
-                  size: 18,
-                  color: AppColors.textHint,
-                ),
-                onPressed: onDelete,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
-                ),
-              ),
-            )
-          else
-            const SizedBox(width: 36),
         ],
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: AppTextStyles.body.copyWith(
+        color: AppColors.textHint,
+      ),
+      counterText: '',
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 10,
+      ),
+      filled: true,
+      fillColor: AppColors.surface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(
+          color: AppColors.primary,
+          width: 1.5,
+        ),
       ),
     );
   }

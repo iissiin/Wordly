@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../domain/entities/user.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import 'profile_state.dart';
 
@@ -22,14 +23,19 @@ class ProfileCubit extends Cubit<ProfileState> {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
-    emit(const ProfileLoading());
+    final currentState = state;
+    if (currentState is! ProfileLoaded) return;
+
     try {
       await _authRepository.updateUserName(trimmed);
-      final user = _authRepository.currentUser;
-      if (user != null) {
-        emit(ProfileLoaded(user));
-      }
-      emit(const ProfileOperationSuccess('Name updated'));
+
+      final updated = AppUser(
+        id: currentState.user.id,
+        name: trimmed,
+        email: currentState.user.email,
+      );
+
+      emit(ProfileUpdated(updated));
     } on Exception catch (e) {
       emit(ProfileError(e.toString()));
     }

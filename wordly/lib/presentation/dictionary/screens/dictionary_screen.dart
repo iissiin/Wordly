@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wordly/domain/entities/quiz_settings.dart';
+import 'package:wordly/presentation/quiz/widgets/quiz_settings_sheet.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -230,6 +232,33 @@ class _QuizButtons extends StatelessWidget {
 
   const _QuizButtons({required this.dictionary});
 
+  Future<void> _openSettings(
+    BuildContext context,
+    String type,
+  ) async {
+    final settings = await showModalBottomSheet<QuizSettings>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => QuizSettingsSheet(
+        initial: const QuizSettings(),
+        quizType: type,
+      ),
+    );
+
+    // Пользователь закрыл без нажатия Start
+    if (settings == null || !context.mounted) return;
+
+    final path = type == 'flashcard'
+        ? '/dictionary/${dictionary.id}/flashcards'
+        : '/dictionary/${dictionary.id}/written';
+
+    context.push(path, extra: {
+      'dictionary': dictionary,
+      'settings': settings,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -238,10 +267,7 @@ class _QuizButtons extends StatelessWidget {
           child: _QuizButton(
             icon: Icons.style_outlined,
             label: AppStrings.flashCards,
-            onTap: () => context.push(
-              '/dictionary/${dictionary.id}/flashcards',
-              extra: dictionary,
-            ),
+            onTap: () => _openSettings(context, 'flashcard'),
           ),
         ),
         const SizedBox(width: 12),
@@ -249,10 +275,7 @@ class _QuizButtons extends StatelessWidget {
           child: _QuizButton(
             icon: Icons.edit_outlined,
             label: AppStrings.writtenInput,
-            onTap: () => context.push(
-              '/dictionary/${dictionary.id}/written',
-              extra: dictionary,
-            ),
+            onTap: () => _openSettings(context, 'written'),
           ),
         ),
       ],

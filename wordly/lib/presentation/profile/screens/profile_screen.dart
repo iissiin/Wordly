@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../domain/entities/user.dart';
 import '../cubit/profile_cubit.dart';
 import '../cubit/profile_state.dart';
 
@@ -30,17 +31,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
+          if (state is ProfileUpdated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Name updated')),
+            );
+          }
           if (state is ProfileOperationSuccess) {
             if (state.message == 'Signed out' ||
                 state.message == 'Account deleted') {
               context.go('/');
               return;
             }
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-            // Перезагружаем профиль после обновления имени
-            context.read<ProfileCubit>().loadProfile();
           }
           if (state is ProfileError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -55,19 +56,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           }
 
-          if (state is ProfileLoaded || state is ProfileOperationSuccess) {
-            // Берём user из ProfileLoaded
-            // После операции перезагружаем — но пока показываем
-            // последний известный state
-            final loadedState = state is ProfileLoaded ? state : null;
+          final user = (state is ProfileLoaded)
+              ? state.user
+              : (state is ProfileUpdated)
+                  ? state.user
+                  : null;
 
-            return _ProfileBody(
-              name: loadedState?.user.name ?? '',
-              email: loadedState?.user.email ?? '',
-            );
-          }
+          if (user == null) return const SizedBox.shrink();
 
-          return const SizedBox.shrink();
+          return _ProfileBody(user: user);
         },
       ),
     );
@@ -77,86 +74,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
 // ─── Profile Body ──────────────────────────────────────────────
 
 class _ProfileBody extends StatelessWidget {
-  final String name;
-  final String email;
+  final AppUser user;
 
-  const _ProfileBody({required this.name, required this.email});
+  const _ProfileBody({required this.user});
+
+  static const double _dividerInset = 56;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        // ── User info ──────────────────────────────────
+        // ── User info ───────────────────────────────
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name, style: AppTextStyles.heading2),
+              Text(user.name, style: AppTextStyles.heading2),
               const SizedBox(height: 4),
-              Text(email, style: AppTextStyles.caption),
+              Text(user.email, style: AppTextStyles.caption),
             ],
           ),
         ),
 
         const SizedBox(height: 8),
-        const Divider(),
+        const Divider(height: 1),
 
-        // ── Edit name ──────────────────────────────────
+        // ── Edit name ───────────────────────────────
         ListTile(
-          leading: const Icon(
-            Icons.edit_outlined,
-            color: AppColors.textSecondary,
-            size: 20,
-          ),
-          title: const Text(
-            AppStrings.editName,
-            style: TextStyle(fontSize: 15),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            color: AppColors.textHint,
-            size: 20,
-          ),
-          onTap: () => _showEditNameSheet(context, name),
+          leading: const Icon(Icons.edit_outlined,
+              color: AppColors.textSecondary, size: 20),
+          title:
+              const Text(AppStrings.editName, style: TextStyle(fontSize: 15)),
+          trailing: const Icon(Icons.chevron_right,
+              color: AppColors.textHint, size: 20),
+          onTap: () => _showEditNameSheet(context, user.name),
         ),
 
-        const Divider(indent: 56),
+        const Divider(height: 1, indent: _dividerInset),
 
-        // ── Sign out ───────────────────────────────────
+        // ── Sign out ────────────────────────────────
         ListTile(
-          leading: const Icon(
-            Icons.logout,
-            color: AppColors.textSecondary,
-            size: 20,
-          ),
-          title: const Text(
-            AppStrings.signOut,
-            style: TextStyle(fontSize: 15),
-          ),
+          leading: const Icon(Icons.logout,
+              color: AppColors.textSecondary, size: 20),
+          title: const Text(AppStrings.signOut, style: TextStyle(fontSize: 15)),
           onTap: () => _confirmSignOut(context),
         ),
 
-        const SizedBox(height: 24),
-        const Divider(),
+        const Divider(height: 1, indent: _dividerInset),
 
-        // ── Delete account ─────────────────────────────
+        // ── Delete account ──────────────────────────
         ListTile(
-          leading: const Icon(
-            Icons.delete_forever_outlined,
-            color: AppColors.error,
-            size: 20,
-          ),
+          leading: const Icon(Icons.delete_forever_outlined,
+              color: AppColors.error, size: 20),
           title: const Text(
             AppStrings.deleteAccount,
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.error,
-            ),
+            style: TextStyle(fontSize: 15, color: AppColors.error),
           ),
           onTap: () => _confirmDeleteAccount(context),
         ),
@@ -164,7 +138,7 @@ class _ProfileBody extends StatelessWidget {
     );
   }
 
-  // ─── Edit Name Bottom Sheet ──────────────────────────────────
+  // ─── Edit Name Sheet ─────────────────────────────
 
   void _showEditNameSheet(BuildContext context, String currentName) {
     final controller = TextEditingController(text: currentName);
@@ -187,7 +161,6 @@ class _ProfileBody extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle
             Center(
               child: Container(
                 width: 36,
@@ -199,21 +172,14 @@ class _ProfileBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // ignore: prefer_const_constructors
-            Text(AppStrings.editName, style: AppTextStyles.heading3),
+            const Text(AppStrings.editName, style: AppTextStyles.heading3),
             const SizedBox(height: 16),
-
             TextField(
               controller: controller,
               autofocus: true,
               maxLength: 50,
-              style: AppTextStyles.body,
               decoration: InputDecoration(
                 hintText: 'Your name',
-                hintStyle: AppTextStyles.body.copyWith(
-                  color: AppColors.textHint,
-                ),
                 counterText: '',
                 filled: true,
                 fillColor: AppColors.surface,
@@ -239,7 +205,6 @@ class _ProfileBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
             AppButton(
               label: AppStrings.save,
               width: double.infinity,
@@ -254,7 +219,7 @@ class _ProfileBody extends StatelessWidget {
     );
   }
 
-  // ─── Confirm Sign Out ────────────────────────────────────────
+  // ─── Sign out ─────────────────────────────────────
 
   void _confirmSignOut(BuildContext context) {
     showDialog(
@@ -279,7 +244,7 @@ class _ProfileBody extends StatelessWidget {
     );
   }
 
-  // ─── Confirm Delete Account ──────────────────────────────────
+  // ─── Delete account ──────────────────────────────
 
   void _confirmDeleteAccount(BuildContext context) {
     showDialog(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wordly/domain/entities/quiz_settings.dart';
 import '../../domain/entities/dictionary.dart';
 import '../../injection_container.dart';
 import '../auth/cubit/auth_cubit.dart';
@@ -109,11 +110,12 @@ class AppRouter {
                 GoRoute(
                   path: 'flashcards',
                   builder: (_, state) {
-                    final dictionary = state.extra as Dictionary;
+                    final args = state.extra as Map<String, dynamic>;
                     return BlocProvider(
                       create: (_) => sl<QuizCubit>(),
                       child: FlashCardScreen(
-                        dictionary: dictionary,
+                        dictionary: args['dictionary'] as Dictionary,
+                        settings: args['settings'] as QuizSettings,
                       ),
                     );
                   },
@@ -123,11 +125,12 @@ class AppRouter {
                 GoRoute(
                   path: 'written',
                   builder: (_, state) {
-                    final dictionary = state.extra as Dictionary;
+                    final args = state.extra as Map<String, dynamic>;
                     return BlocProvider(
                       create: (_) => sl<QuizCubit>(),
                       child: WrittenScreen(
-                        dictionary: dictionary,
+                        dictionary: args['dictionary'] as Dictionary,
+                        settings: args['settings'] as QuizSettings,
                       ),
                     );
                   },

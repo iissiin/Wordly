@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wordly/domain/entities/quiz_settings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -11,8 +12,13 @@ import '../cubit/quiz_state.dart';
 
 class WrittenScreen extends StatefulWidget {
   final Dictionary dictionary;
+  final QuizSettings settings;
 
-  const WrittenScreen({super.key, required this.dictionary});
+  const WrittenScreen({
+    super.key,
+    required this.dictionary,
+    required this.settings,
+  });
 
   @override
   State<WrittenScreen> createState() => _WrittenScreenState();
@@ -25,7 +31,7 @@ class _WrittenScreenState extends State<WrittenScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<QuizCubit>().startQuiz(widget.dictionary);
+    context.read<QuizCubit>().startQuiz(widget.dictionary, widget.settings);
   }
 
   @override
@@ -169,7 +175,7 @@ class _WrittenBody extends StatelessWidget {
             const Text('Translate', style: AppTextStyles.caption),
             const SizedBox(height: 12),
             Text(
-              state.currentWord.original,
+              context.read<QuizCubit>().questionFor(state.currentWord),
               style: AppTextStyles.heading1,
             ),
             const SizedBox(height: 32),

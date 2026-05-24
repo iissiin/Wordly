@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wordly/domain/entities/quiz_settings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -11,8 +12,13 @@ import '../cubit/quiz_state.dart';
 
 class FlashCardScreen extends StatefulWidget {
   final Dictionary dictionary;
+  final QuizSettings settings;
 
-  const FlashCardScreen({super.key, required this.dictionary});
+  const FlashCardScreen({
+    super.key,
+    required this.dictionary,
+    required this.settings,
+  });
 
   @override
   State<FlashCardScreen> createState() => _FlashCardScreenState();
@@ -22,7 +28,7 @@ class _FlashCardScreenState extends State<FlashCardScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<QuizCubit>().startQuiz(widget.dictionary);
+    context.read<QuizCubit>().startQuiz(widget.dictionary, widget.settings);
   }
 
   @override
@@ -170,7 +176,7 @@ class _Card extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              state.currentWord.original,
+              context.read<QuizCubit>().questionFor(state.currentWord),
               style: AppTextStyles.heading1.copyWith(fontSize: 28),
               textAlign: TextAlign.center,
             ),

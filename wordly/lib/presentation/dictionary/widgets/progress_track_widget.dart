@@ -51,7 +51,6 @@ class ProgressTrackWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -63,19 +62,18 @@ class ProgressTrackWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-
-          // ── Dots track ──────────────────────────────
-          _DotsTrack(currentStage: stage, totalStages: labels.length),
+          _DotsTrack(
+            currentStage: stage,
+            totalStages: labels.length,
+          ),
           const SizedBox(height: 12),
-
-          // ── Stage labels ────────────────────────────
-          _StageLabels(labels: labels, currentStage: stage),
-
+          _StageLabels(
+            labels: labels,
+            currentStage: stage,
+          ),
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 12),
-
-          // ── Checkbox row ─────────────────────────────
           _ReviewCheckbox(
             isDue: _isDue,
             isAllCompleted: _isAllCompleted,
@@ -88,7 +86,7 @@ class ProgressTrackWidget extends StatelessWidget {
   }
 }
 
-// ─── Review Checkbox ───────────────────────────────────────────
+// ─── Review Checkbox (CLEAN VERSION) ───────────────────────────
 
 class _ReviewCheckbox extends StatefulWidget {
   final bool isDue;
@@ -110,31 +108,29 @@ class _ReviewCheckbox extends StatefulWidget {
 class _ReviewCheckboxState extends State<_ReviewCheckbox>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _scaleAnim;
+  late final Animation<double> _scale;
+
+  bool _checked = false;
 
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 220),
     );
 
-    _scaleAnim = TweenSequence([
+    _scale = TweenSequence<double>([
       TweenSequenceItem(
-        tween:
-            Tween(begin: 1.0, end: 0.8).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 30,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 0.8, end: 1.1)
+        tween: Tween<double>(begin: 1.0, end: 0.92)
             .chain(CurveTween(curve: Curves.easeOut)),
         weight: 40,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.1, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 30,
+        tween: Tween<double>(begin: 0.92, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 60,
       ),
     ]).animate(_controller);
   }
@@ -143,6 +139,21 @@ class _ReviewCheckboxState extends State<_ReviewCheckbox>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _handle() async {
+    setState(() => _checked = true);
+
+    await _controller.forward();
+    await Future.delayed(const Duration(milliseconds: 120));
+
+    widget.onMarkAllReviewed();
+
+    if (!mounted) return;
+
+    _controller.reset();
+
+    setState(() => _checked = false);
   }
 
   void _confirm(BuildContext context) {
@@ -161,7 +172,7 @@ class _ReviewCheckboxState extends State<_ReviewCheckbox>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _runAnimation();
+              _handle();
             },
             child: const Text('Confirm'),
           ),
@@ -170,16 +181,8 @@ class _ReviewCheckboxState extends State<_ReviewCheckbox>
     );
   }
 
-  void _runAnimation() {
-    _controller.forward().then((_) {
-      _controller.reset();
-      widget.onMarkAllReviewed();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Всё завершено
     if (widget.isAllCompleted) {
       return Row(
         children: [
@@ -187,43 +190,55 @@ class _ReviewCheckboxState extends State<_ReviewCheckbox>
           const SizedBox(width: 10),
           Text(
             'All words completed',
-            style: AppTextStyles.caption.copyWith(color: AppColors.success),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.success,
+            ),
           ),
         ],
       );
     }
 
-    // Ещё не время
     if (!widget.isDue) {
       return const Row(
         children: [
           Icon(Icons.schedule, size: 16, color: AppColors.textHint),
           SizedBox(width: 10),
-          Text('Not yet time to review', style: AppTextStyles.caption),
+          Text(
+            'Not yet time to review',
+            style: AppTextStyles.caption,
+          ),
         ],
       );
     }
 
-    // Пора повторять
     return InkWell(
       onTap: () => _confirm(context),
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(
+          vertical: 8,
+          horizontal: 6,
+        ),
+        decoration: BoxDecoration(
+          color: _checked
+              ? AppColors.primary.withOpacity(0.06)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Row(
           children: [
-            // Просто scale на чекбоксе — никаких switcher
             ScaleTransition(
-              scale: _scaleAnim,
+              scale: _scale,
               child: SizedBox(
                 width: 24,
                 height: 24,
                 child: Checkbox(
-                  value: false,
+                  value: _checked,
                   onChanged: (_) => _confirm(context),
                   activeColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(5),
                   ),
                   side: const BorderSide(
                     color: AppColors.primary,
@@ -233,21 +248,29 @@ class _ReviewCheckboxState extends State<_ReviewCheckbox>
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Mark all as reviewed',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.primary,
-                  ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 150),
+                opacity: _checked ? 0.7 : 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mark all as reviewed',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${widget.wordCount} words ready for review',
+                      style: AppTextStyles.small,
+                    ),
+                  ],
                 ),
-                Text(
-                  '${widget.wordCount} words ready for review',
-                  style: AppTextStyles.small,
-                ),
-              ],
+              ),
             ),
           ],
         ),
@@ -256,7 +279,7 @@ class _ReviewCheckboxState extends State<_ReviewCheckbox>
   }
 }
 
-// ─── Dots Track ────────────────────────────────────────────────
+// ─── Dots + Labels (без изменений) ─────────────────────────────
 
 class _DotsTrack extends StatelessWidget {
   final int currentStage;
@@ -274,6 +297,7 @@ class _DotsTrack extends StatelessWidget {
         if (index.isOdd) {
           final stageIndex = index ~/ 2;
           final isPassed = stageIndex < currentStage;
+
           return Expanded(
             child: Container(
               height: 1,
@@ -287,7 +311,10 @@ class _DotsTrack extends StatelessWidget {
         final isPassed = dotIndex < currentStage;
         final isCurrent = dotIndex == currentStage;
 
-        return _Dot(isPassed: isPassed, isCurrent: isCurrent);
+        return _Dot(
+          isPassed: isPassed,
+          isCurrent: isCurrent,
+        );
       }),
     );
   }
@@ -297,7 +324,10 @@ class _Dot extends StatelessWidget {
   final bool isPassed;
   final bool isCurrent;
 
-  const _Dot({required this.isPassed, required this.isCurrent});
+  const _Dot({
+    required this.isPassed,
+    required this.isCurrent,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -319,7 +349,10 @@ class _Dot extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.primary,
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primaryLight, width: 3),
+          border: Border.all(
+            color: AppColors.primaryLight,
+            width: 3,
+          ),
         ),
       );
     }
@@ -336,19 +369,20 @@ class _Dot extends StatelessWidget {
   }
 }
 
-// ─── Stage Labels ──────────────────────────────────────────────
-
 class _StageLabels extends StatelessWidget {
   final List<String> labels;
   final int currentStage;
 
-  const _StageLabels({required this.labels, required this.currentStage});
+  const _StageLabels({
+    required this.labels,
+    required this.currentStage,
+  });
 
   @override
   Widget build(BuildContext context) {
     final current = labels[currentStage];
-    final hasNext = currentStage < labels.length - 1;
-    final next = hasNext ? labels[currentStage + 1] : null;
+    final next =
+        currentStage < labels.length - 1 ? labels[currentStage + 1] : null;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -377,7 +411,9 @@ class _StageLabels extends StatelessWidget {
         else
           Text(
             'Completed',
-            style: AppTextStyles.caption.copyWith(color: AppColors.success),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.success,
+            ),
           ),
       ],
     );
